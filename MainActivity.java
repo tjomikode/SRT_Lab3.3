@@ -46,21 +46,38 @@ public class MainActivity extends AppCompatActivity {
         int f;
         int[] deltas = new int[POP];
 
-        while (true) {
-            for (int i = 0; i < POP; i++) {
-                f = a * population[i][0] + b * population[i][1] + c * population[i][2] + d * population[i][3];
-                deltas[i] = Math.abs(y - f);
+        // time for task
+        double[] timeOfTask = new double[6];
+        // results array
+        int[][] resultsAdditional = new int[6][POP];
+        // 20 % mutate up per each step
+        for (int k = 0, currentMutation = 0; k < timeOfTask.length; k++, currentMutation += 20) {
+            long time = System.nanoTime();
+            while ((System.nanoTime() - time) / 1000000000 < 3) {
+                for (int j = 0; j < POP; j++) {
+                    f = a * population[j][0] + b * population[j][1] + c * population[j][2] + d * population[j][3];
+                    deltas[j] = Math.abs(f - y);
+                }
+                if (checkDeltas(deltas)) break;
+                population = newGeneration(population, getProbabilities(deltas), currentMutation);
             }
-
-            if (checkDeltas(deltas)) break;
-
-            population = newGeneration(population, getProbabilities(deltas));
+            time = System.nanoTime() - time;
+            timeOfTask[k] = time / 1000000000.0;
+            resultsAdditional[k] = population[resultGenotype];
         }
-
+        //the lowest time task
+        int resultss = getMinimumValueIndex(timeOfTask);
+        //result roots
         TextView textView = findViewById(R.id.textView17);
-        textView.setText("Results: " + Arrays.toString(population[resultGenotype]));
-
+        textView.setText("Result roots: " + Arrays.toString(resultsAdditional[resultss]));
+        //used time for task
+        TextView textView2 = findViewById(R.id.textView18);
+        textView2.setText("Time in seconds: " + timeOfTask[resultss]);
+        //mutation percentage
+        TextView textView3 = findViewById(R.id.textView20);
+        textView3.setText("Mutation percentage: " + resultss * 20);
     }
+
 
     private int[][] getPopulation() {
         int[][] population = new int[POP][POP];
@@ -93,12 +110,12 @@ public class MainActivity extends AppCompatActivity {
             probabilities[i] /= sum;
         }
         for (int i = 1; i < POP; i++) {
-            probabilities[i] += probabilities[i-1];
+            probabilities[i] += probabilities[i - 1];
         }
         return probabilities;
     }
 
-    private int[][] newGeneration(int[][] oldPopulation, double[] probabilities) {
+    private int[][] newGeneration(int[][] oldPopulation, double[] probabilities, int mutationPercentage) {
         int[][] newGen = new int[POP][POP];
 
         for (int i = 0; i < POP; i++) {
@@ -111,18 +128,31 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // mutation
-        if (RANDOM.nextDouble() < 0.5) {
-            newGen[RANDOM.nextInt(POP)][RANDOM.nextInt(POP)]++;
-        } else {
-            newGen[RANDOM.nextInt(POP)][RANDOM.nextInt(POP)]--;
+        if (RANDOM.nextDouble() < mutationPercentage / 100.0) {
+            if (RANDOM.nextDouble() < 0.5) {
+                newGen[RANDOM.nextInt(POP)][RANDOM.nextInt(POP)]++;
+            } else {
+                newGen[RANDOM.nextInt(POP)][RANDOM.nextInt(POP)]--;
+            }
         }
-
         return newGen;
+    }
+
+    private int getMinimumValueIndex(double[] numbers) {
+        double minValue = numbers[0];
+        int minIndex = 0;
+        for (int i = 1; i < numbers.length; i++) {
+            if (numbers[i] < minValue) {
+                minValue = numbers[i];
+                minIndex = i;
+            }
+        }
+        return minIndex;
     }
 
     private int peekRoot(double[] probabilities) {
         double rand = RANDOM.nextDouble();
-        if(rand < probabilities[0]) {
+        if (rand < probabilities[0]) {
             return 0;
         } else if (rand < probabilities[1]) {
             return 1;
